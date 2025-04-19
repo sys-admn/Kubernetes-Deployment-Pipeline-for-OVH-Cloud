@@ -1,0 +1,35 @@
+---
+- name: Setup kubectl and configure bastion
+  hosts: bastion
+  become: yes
+  tasks:
+    - name: Set DNS server to 8.8.8.8
+      lineinfile:
+        path: /etc/resolv.conf
+        line: "nameserver 8.8.8.8"
+        create: yes
+
+    - name: Download kubectl
+      get_url:
+        url: https://dl.k8s.io/release/v1.32.0/bin/linux/amd64/kubectl
+        dest: /usr/local/bin/kubectl
+        mode: '0755'
+
+    - name: Verify kubectl installation
+      command: kubectl version --client
+
+    - name: Copy kubeconfig file to bastion
+      copy:
+        src: ../kubeconfig.yml
+        dest: /home/ubuntu/kubeconfig.yml
+        owner: ubuntu
+        group: ubuntu
+        mode: '0600'
+
+    - name: Set KUBECONFIG environment variable and run kubectl commands
+      shell: |
+        export KUBECONFIG=/home/ubuntu/kubeconfig.yml
+        kubectl get nodes
+        kubectl get pods -A
+      args:
+        executable: /bin/bash
