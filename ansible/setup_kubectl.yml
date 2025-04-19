@@ -44,10 +44,25 @@
         group: debian
         mode: '0600'
 
-    - name: Check Kubernetes nodes
+    - name: Copy Nginx manifest to bastion
+      copy:
+        src: ../k8s/nginx.yaml
+        dest: /home/debian/nginx.yaml
+        owner: debian
+        group: debian
+        mode: '0644'
+
+    - name: Apply nginx manifest
       shell: |
         export KUBECONFIG=/home/debian/kubeconfig.yml
-        kubectl  --kubeconfig=/home/debian/kubeconfig.yml get nodes
-        kubectl  --kubeconfig=/home/debian/kubeconfig.yml get pods -A
+        kubectl apply -f /home/debian/nginx.yaml
+      args:
+        executable: /bin/bash
+
+    - name: Check Kubernetes nodes and pods
+      shell: |
+        export KUBECONFIG=/home/debian/kubeconfig.yml
+        kubectl get nodes
+        kubectl get pods -A
       args:
         executable: /bin/bash

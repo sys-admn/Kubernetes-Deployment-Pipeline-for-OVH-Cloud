@@ -26,78 +26,29 @@ jobs:
         mkdir -p ~/.ssh
         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ secrets.BASTION_IP }} >> ~/.ssh/known_hosts
 
-    - name: Set BASTION_IP environment variable
+    - name: Set BASTION_IP env
       run: echo "BASTION_IP=${{ secrets.BASTION_IP }}" >> $GITHUB_ENV
 
     - name: Generate Ansible inventory
       run: python ansible/generate_inventory.py
+      env:
+        BASTION_IP: ${{ secrets.BASTION_IP }}
 
-    - name: Check SSH connection to bastion
-      run: ssh -o BatchMode=yes -o StrictHostKeyChecking=no debian@${{ secrets.BASTION_IP }} 'echo SSH connection successful'
+    - name: Check SSH connection
+      run: ssh -o BatchMode=yes -o StrictHostKeyChecking=no debian@${{ secrets.BASTION_IP }} 'echo SSH connection OK'
 
     - name: Run Ansible playbook to configure bastion
       run: ansible-playbook -i ansible/inventory.ini ansible/setup_kubectl.yml
       env:
         ANSIBLE_HOST_KEY_CHECKING: 'False'
 
-    - name: Set up kubectl
-      uses: azure/setup-kubectl@v1
-      with:
-        version: 'v1.20.0'
-
-    - name: Deploy Nginx to Kubernetes
+    - name: Healthcheck - Verify Nginx service
       run: |
-        kubectl  --kubeconfig=/home/debian/kubeconfig.yml apply -f - <<EOF
-        apiVersion: v1
-        kind: PersistentVolumeClaim
-        metadata:
-          name: nginx-pvc
-        spec:
-          accessModes:
-            - ReadWriteOnce
-          resources:
-            requests:
-              storage: 1Gi
-          storageClassName: csi-cinder-classic
-        ---
-        apiVersion: apps/v1
-        kind: Deployment
-        metadata:
-          name: nginx-deployment
-        spec:
-          replicas: 1
-          selector:
-            matchLabels:
-              app: nginx
-          template:
-            metadata:
-              labels:
-                app: nginx
-            spec:
-              containers:
-              - name: nginx
-                image: nginx:latest
-                ports:
-                - containerPort: 80
-                volumeMounts:
-                - mountPath: "/usr/share/nginx/html"
-                  name: nginx-storage
-              volumes:
-              - name: nginx-storage
-                persistentVolumeClaim:
-                  claimName: nginx-pvc
-        ---
-        apiVersion: v1
-        kind: Service
-        metadata:
-          name: nginx-service
-        spec:
-          selector:
-            app: nginx
-          ports:
-            - protocol: TCP
-              port: 80
-              targetPort: 80
-          type: LoadBalancer
-        EOF
+        echo "Waiting for Nginx service to be ready..."
+        ssh debian@${{ secrets.BASTION_IP }} "
+          export KUBECONFIG=/home/debian/kubeconfig.yml
+          kubectl wait --for=condition=available deployment/nginx-deployment --timeout=60s
+          kubectl get svc nginx-service
+        "
