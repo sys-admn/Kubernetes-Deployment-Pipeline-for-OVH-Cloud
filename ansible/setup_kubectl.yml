@@ -47,7 +47,7 @@
     - name: Check Kubernetes nodes
       shell: |
         export KUBECONFIG=/home/debian/kubeconfig.yml
-        kubectl  --kubeconfig=/home/ubuntu/kubeconfig.yml get nodes
-        kubectl  --kubeconfig=/home/ubuntu/kubeconfig.yml get pods -A
+        kubectl  --kubeconfig=/home/debian/kubeconfig.yml get nodes
+        kubectl  --kubeconfig=/home/debian/kubeconfig.yml get pods -A
       args:
         executable: /bin/bash

@@ -23,9 +23,9 @@ jobs:
 
     - name: Set up SSH key
       run: |
-        sudo mkdir -p ~/.ssh
+        mkdir -p ~/.ssh
         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-        sudo chmod 600 ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
 
     - name: Set BASTION_IP environment variable
       run: echo "BASTION_IP=${{ secrets.BASTION_IP }}" >> $GITHUB_ENV
@@ -34,7 +34,8 @@ jobs:
       run: python ansible/generate_inventory.py
 
     - name: Check SSH connection to bastion
-      run: ssh -o BatchMode=yes -o StrictHostKeyChecking=no debian@51.161.82.201 'echo SSH connection successful'
+      run: ssh -o BatchMode=yes -o StrictHostKeyChecking=no debian@${{ secrets.BASTION_IP }} 'echo SSH connection successful'
+
     - name: Run Ansible playbook to configure bastion
       run: ansible-playbook -i ansible/inventory.ini ansible/setup_kubectl.yml
       env:
@@ -47,7 +48,7 @@ jobs:
 
     - name: Deploy Nginx to Kubernetes
       run: |
-        kubectl --kubeconfig=/home/ubuntu/kubeconfig.yml  apply -f - <<EOF
+        kubectl  --kubeconfig=/home/debian/kubeconfig.yml apply -f - <<EOF
         apiVersion: v1
         kind: PersistentVolumeClaim
         metadata:
