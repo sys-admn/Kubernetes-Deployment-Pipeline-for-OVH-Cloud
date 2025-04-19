@@ -33,6 +33,9 @@ jobs:
     - name: Generate Ansible inventory
       run: python ansible/generate_inventory.py
 
+    - name: Check SSH connection to bastion
+      run: ssh -o BatchMode=yes -o StrictHostKeyChecking=no debian@${{ secrets.BASTION_IP }} 'echo SSH connection successful'
+
     - name: Run Ansible playbook to configure bastion
       run: ansible-playbook -i ansible/inventory.ini ansible/setup_kubectl.yml
       env:
@@ -45,7 +48,7 @@ jobs:
 
     - name: Deploy Nginx to Kubernetes
       run: |
-        kubectl --kubeconfig=/home/ubuntu/kubeconfig.yml get nodes apply -f - <<EOF
+        kubectl --kubeconfig=/home/ubuntu/kubeconfig.yml  apply -f - <<EOF
         apiVersion: v1
         kind: PersistentVolumeClaim
         metadata:
