@@ -13,24 +13,6 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
 
-    - name: Set up Terraform
-      uses: hashicorp/setup-terraform@v1
-      with:
-        terraform_version: 1.0.0
-
-    - name: Terraform Init
-      run: terraform init
-
-    - name: Terraform Apply
-      run: terraform apply -auto-approve
-      env:
-        TF_VAR_openstack_user_name: ${{ secrets.OPENSTACK_USER_NAME }}
-        TF_VAR_openstack_password: ${{ secrets.OPENSTACK_PASSWORD }}
-        TF_VAR_openstack_tenant_name: ${{ secrets.OPENSTACK_TENANT_NAME }}
-        TF_VAR_ovh_application_key: ${{ secrets.OVH_APPLICATION_KEY }}
-        TF_VAR_ovh_application_secret: ${{ secrets.OVH_APPLICATION_SECRET }}
-        TF_VAR_ovh_consumer_key: ${{ secrets.OVH_CONSUMER_KEY }}
-
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
@@ -42,7 +24,7 @@ jobs:
     - name: Set up SSH key
       run: |
         mkdir -p ~/.ssh
-        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        echo "\${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
 
     - name: Run Ansible playbook to configure bastion
@@ -84,29 +66,4 @@ jobs:
               labels:
                 app: nginx
             spec:
-              containers:
-              - name: nginx
-                image: nginx:latest
-                ports:
-                - containerPort: 80
-                volumeMounts:
-                - mountPath: "/usr/share/nginx/html"
-                  name: nginx-storage
-              volumes:
-              - name: nginx-storage
-                persistentVolumeClaim:
-                  claimName: nginx-pvc
-        ---
-        apiVersion: v1
-        kind: Service
-        metadata:
-          name: nginx-service
-        spec:
-          selector:
-            app: nginx
-          ports:
-            - protocol: TCP
-              port: 80
-              targetPort: 80
-          type: LoadBalancer
-        EOF
+     
