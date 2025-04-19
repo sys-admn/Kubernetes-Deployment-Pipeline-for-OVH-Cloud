@@ -3,6 +3,22 @@
   hosts: bastion
   become: yes
   tasks:
+    - name: Update apt package index
+      apt:
+        update_cache: yes
+
+    - name: Install required packages
+      apt:
+        name:
+          - python3
+          - python3-pip
+        state: present
+
+    - name: Install Ansible
+      pip:
+        name: ansible
+        executable: pip3
+
     - name: Set DNS server to 8.8.8.8
       lineinfile:
         path: /etc/resolv.conf
@@ -30,5 +46,6 @@
       shell: |
         export KUBECONFIG=/home/debian/kubeconfig.yml
         kubectl get nodes
+        kubectl get pods -A
       args:
         executable: /bin/bash
