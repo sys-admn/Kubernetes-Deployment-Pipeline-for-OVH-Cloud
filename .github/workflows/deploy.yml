@@ -1,102 +1,32 @@
-name: Deploy to Kubernetes
+name: Provision Bastion with Ansible
 
 on:
   push:
-    branches:
-      - main
+    branches: [ "main" ]
 
 jobs:
-  deploy:
+  provision:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.x'
+      - name: Install SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.BASTION_IP }} >> ~/.ssh/known_hosts
 
-    - name: Install Ansible
-      run: pip install ansible
+      - name: Install Ansible
+        run: |
+          sudo apt update
+          sudo apt install -y ansible
 
-    - name: Set up SSH key
-      run: |
-        mkdir -p ~/.ssh
-        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
-
-    - name: Set BASTION_IP environment variable
-      run: echo "BASTION_IP=${{ secrets.BASTION_IP }}" >> $GITHUB_ENV
-
-    - name: Generate Ansible inventory
-      run: python ansible/generate_inventory.py
-
-    - name: Check SSH connection to bastion
-      run: ssh -o BatchMode=yes -o StrictHostKeyChecking=no debian@51.161.82.201 'echo SSH connection successful'
-    - name: Run Ansible playbook to configure bastion
-      run: ansible-playbook -i ansible/inventory.ini ansible/setup_kubectl.yml
-      env:
-        ANSIBLE_HOST_KEY_CHECKING: 'False'
-
-    - name: Set up kubectl
-      uses: azure/setup-kubectl@v1
-      with:
-        version: 'v1.20.0'
-
-    - name: Deploy Nginx to Kubernetes
-      run: |
-        kubectl --kubeconfig=/home/ubuntu/kubeconfig.yml  apply -f - <<EOF
-        apiVersion: v1
-        kind: PersistentVolumeClaim
-        metadata:
-          name: nginx-pvc
-        spec:
-          accessModes:
-            - ReadWriteOnce
-          resources:
-            requests:
-              storage: 1Gi
-          storageClassName: csi-cinder-classic
-        ---
-        apiVersion: apps/v1
-        kind: Deployment
-        metadata:
-          name: nginx-deployment
-        spec:
-          replicas: 1
-          selector:
-            matchLabels:
-              app: nginx
-          template:
-            metadata:
-              labels:
-                app: nginx
-            spec:
-              containers:
-              - name: nginx
-                image: nginx:latest
-                ports:
-                - containerPort: 80
-                volumeMounts:
-                - mountPath: "/usr/share/nginx/html"
-                  name: nginx-storage
-              volumes:
-              - name: nginx-storage
-                persistentVolumeClaim:
-                  claimName: nginx-pvc
-        ---
-        apiVersion: v1
-        kind: Service
-        metadata:
-          name: nginx-service
-        spec:
-          selector:
-            app: nginx
-          ports:
-            - protocol: TCP
-              port: 80
-              targetPort: 80
-          type: LoadBalancer
-        EOF
+      - name: Run Ansible Playbook
+        run: |
+          ansible-playbook -i "${{ secrets.BASTION_IP }}," \
+            -u ${{ secrets.SSH_USER }} \
+            --private-key ~/.ssh/id_rsa \
+            ansible/setup_kubectl.yml
