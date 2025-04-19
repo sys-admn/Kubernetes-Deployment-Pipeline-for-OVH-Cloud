@@ -45,7 +45,7 @@
     - name: Set KUBECONFIG environment variable and run kubectl commands
       shell: |
         export KUBECONFIG=/home/debian/kubeconfig.yml
-        kubectl get nodes
-        kubectl get pods -A
+        kubectl --kubeconfig=/home/ubuntu/kubeconfig.yml get nodes
+        kubectl --kubeconfig=/home/ubuntu/kubeconfig.yml get pods -A
       args:
         executable: /bin/bash
