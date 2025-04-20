@@ -24,27 +24,35 @@ jobs:
         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
 
-    - name: Set BASTION_IP env
-      run: echo "BASTION_IP=51.161.82.201" >> $GITHUB_ENV
+    - name: Add bastion host to known_hosts
+      run: ssh-keyscan -H ${{ secrets.BASTION_IP }} >> ~/.ssh/known_hosts
 
     - name: Generate Ansible inventory
       run: python ansible/generate_inventory.py
       env:
-        BASTION_IP: 51.161.82.201
+        BASTION_IP: "${{ secrets.BASTION_IP }}"
 
+    - name: Recreate kubeconfig.yml from secret
+      run: |
+          echo "${{ secrets.KUBECONFIG_B64 }}" | base64 -d > kubeconfig.yml
     - name: Check SSH connection
-      run: ssh -o BatchMode=yes -o StrictHostKeyChecking=no debian@51.161.82.201 'echo SSH connection successful'
-
-
+      run: ssh -o BatchMode=yes -o StrictHostKeyChecking=no debian@${{ secrets.BASTION_IP }} 'echo SSH connection successful'
+    - name: Recreate kubeconfig.yml from secret
+      run: |
+        echo "${{ secrets.KUBECONFIG_B64 }}" | base64 -d > kubeconfig.yml
+ 
     - name: Run Ansible playbook to configure bastion
       run: ansible-playbook -i ansible/inventory.ini ansible/setup_kubectl.yml
       env:
         ANSIBLE_HOST_KEY_CHECKING: 'False'
 
+    - name: Clean up kubeconfig.yml
+      run: rm -f kubeconfig.yml
+
     - name: Healthcheck - Verify Nginx service
       run: |
         echo "Waiting for Nginx service to be ready..."
-        ssh debian@51.161.82.201 "
+        ssh debian@${{ secrets.BASTION_IP }} "
           export KUBECONFIG=/home/debian/kubeconfig.yml
           kubectl wait --for=condition=available deployment/nginx-deployment --timeout=60s
           kubectl get svc nginx-service
