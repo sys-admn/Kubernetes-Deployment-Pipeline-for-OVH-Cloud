@@ -45,6 +45,9 @@ jobs:
       run: ansible-playbook -i ansible/inventory.ini ansible/setup_kubectl.yml
       env:
         ANSIBLE_HOST_KEY_CHECKING: 'False'
+        
+    - name: Clean up kubeconfig.yml
+      run: rm -f kubeconfig.yml
 
     - name: Healthcheck - Verify Nginx service
       run: |
