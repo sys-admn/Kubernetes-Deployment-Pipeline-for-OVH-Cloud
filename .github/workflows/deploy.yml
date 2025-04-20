@@ -46,9 +46,6 @@ jobs:
       env:
         ANSIBLE_HOST_KEY_CHECKING: 'False'
 
-    - name: Clean up kubeconfig.yml
-      run: rm -f kubeconfig.yml
-
     - name: Healthcheck - Verify Nginx service
       run: |
         echo "Waiting for Nginx service to be ready..."
