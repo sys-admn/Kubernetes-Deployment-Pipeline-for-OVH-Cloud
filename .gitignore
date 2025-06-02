@@ -1,2 +1,4 @@
 kubeconfig.yml
 kubeconfig.b64
+terraform.tfstate
+.terraform
