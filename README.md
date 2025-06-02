@@ -1,6 +1,6 @@
 # Kubernetes Deployment Pipeline for OVH Cloud
 
-This project provides a CI/CD pipeline for deploying a Nginx web server on OVH Cloud's Kubernetes service. The pipeline uses GitHub Actions for automation, Ansible for configuration management, and Kubernetes for container orchestration.
+This project ([depends_on https://github.com/sys-admn/OVHCloud-Infrastructure-Project]) provides a CI/CD pipeline for deploying a Nginx web server on OVH Cloud's Kubernetes service. The pipeline uses GitHub Actions for automation, Ansible for configuration management, and Kubernetes for container orchestration.
 
 ## Project Overview
 
@@ -13,7 +13,7 @@ This pipeline automates the deployment of a Nginx web server with persistent sto
 
 ## Repository Structure
 
-
+```
 Kubernetes-Deployment-Pipeline-for-OVH-Cloud/
 ├── .github/workflows/      # GitHub Actions workflow definitions
 │   └── deploy.yml          # Main deployment workflow
@@ -23,7 +23,11 @@ Kubernetes-Deployment-Pipeline-for-OVH-Cloud/
 │   └── setup_kubectl.yml   # Ansible playbook for setting up kubectl
 ├── k8s/                    # Kubernetes manifests
 │   └── nginx.yaml          # Nginx deployment with persistent volume
-└── kubeconfig.yml          # Kubernetes configuration (generated during deployment)
+├── .gitignore              # Git ignore file
+└── README.md               # Project documentation
+```
+
+Note: The `kubeconfig.yml` file will be generated during deployment.
 
 ## Deployment Process
 
